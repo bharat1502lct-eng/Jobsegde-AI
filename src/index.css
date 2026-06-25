@@ -1,0 +1,90 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-serif: "Playfair Display", serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-primary: #4f46e5;
+  --color-primary-dark: #4338ca;
+  --color-accent: #f43f5e;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-slate-900 antialiased selection:bg-indigo-100;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-indigo-50/50 dark:border-slate-800/20 shadow-2xl shadow-indigo-100/20 dark:shadow-none;
+  }
+  
+  .input-field {
+    @apply w-full p-3.5 bg-indigo-50/20 dark:bg-slate-800/50 border border-indigo-100/50 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all duration-500 font-medium text-sm sm:text-base placeholder:text-slate-400 dark:placeholder:text-slate-500 dark:text-white;
+  }
+  
+  .btn-primary {
+    @apply px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-white rounded-xl sm:rounded-2xl font-bold uppercase tracking-widest hover:bg-primary-dark active:scale-[0.98] transition-all duration-300 shadow-lg shadow-primary/20 dark:shadow-none flex items-center justify-center gap-2 text-[10px] sm:text-xs;
+  }
+
+  .mask-fade-right {
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  }
+}
+
+.resume-preview {
+  line-height: 1.5;
+  color: black;
+}
+
+.resume-preview h1 {
+  font-size: 24pt;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 4pt;
+}
+
+.resume-preview h2 {
+  font-size: 14pt;
+  font-weight: bold;
+  border-bottom: 1pt solid black;
+  margin-top: 12pt;
+  margin-bottom: 6pt;
+  text-transform: uppercase;
+}
+
+.resume-preview .contact-info {
+  text-align: center;
+  font-size: 10pt;
+  margin-bottom: 12pt;
+}
+
+.resume-preview .section-item {
+  margin-bottom: 8pt;
+}
+
+.resume-preview .item-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+}
+
+.resume-preview .item-sub {
+  display: flex;
+  justify-content: space-between;
+  font-style: italic;
+}
+
+.resume-preview ul {
+  list-style-type: disc;
+  margin-left: 18pt;
+  font-size: 10.5pt;
+}

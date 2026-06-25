@@ -1,0 +1,143 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ===============================================================
+    // Global Helpers
+    // ===============================================================
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    
+    // ===============================================================
+    // User Profile
+    // ===============================================================
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'fullName', 'email', 'role', 'onboardingCompleted']) &&
+             data.uid == request.auth.uid &&
+             data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 100 &&
+             data.email is string && data.email.size() <= 100 &&
+             data.role in ['candidate', 'employer'] &&
+             data.onboardingCompleted is bool &&
+             (!('createdAt' in data) || data.createdAt == request.time) &&
+             (!('id' in data) || data.id == data.uid) &&
+             (!('subscription' in data) || data.subscription is map) &&
+             (!('usage' in data) || data.usage is map);
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid);
+    }
+
+    // ===============================================================
+    // Resumes
+    // ===============================================================
+    function isValidResume(data) {
+      return data.personalInfo is map &&
+             data.experience is list && data.experience.size() <= 20 &&
+             data.education is list && data.education.size() <= 10 &&
+             data.skills is list && data.skills.size() <= 50 &&
+             data.projects is list && data.projects.size() <= 20 &&
+             (!('updatedAt' in data) || data.updatedAt == request.time);
+    }
+
+    match /resumes/{uid} {
+      allow read: if isOwner(uid) || (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'employer');
+      allow create: if isOwner(uid) && isValidResume(incoming());
+      allow update: if isOwner(uid) && isValidResume(incoming());
+    }
+
+    // ===============================================================
+    // Jobs
+    // ===============================================================
+    function isValidJob(data) {
+      return data.keys().hasAll(['title', 'description', 'status', 'employerUid']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.description is string && data.description.size() > 0 && data.description.size() <= 50000 &&
+             data.status in ['active', 'closed'] &&
+             data.employerUid == request.auth.uid &&
+             (!('updatedAt' in data) || data.updatedAt == request.time);
+    }
+
+    match /jobs/{jobId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(jobId) && isValidJob(incoming());
+      allow update: if isSignedIn() && existing().employerUid == request.auth.uid && isValidJob(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasAll(['updatedAt']) || true // Allow general updates for employer
+      );
+      allow delete: if isSignedIn() && existing().employerUid == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Applications
+    // ===============================================================
+    function isValidApplication(data) {
+      return data.keys().hasAll(['jobId', 'candidateUid', 'candidateName', 'status']) &&
+             data.jobId is string && isValidId(data.jobId) &&
+             data.candidateUid == request.auth.uid &&
+             data.status == 'pending' &&
+             (!('createdAt' in data) || data.createdAt == request.time);
+    }
+
+    match /applications/{applicationId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidApplication(incoming()) && 
+                    exists(/databases/$(database)/documents/jobs/$(incoming().jobId));
+      allow update: if isSignedIn() && (
+        // Employer updates status or AI analysis
+        (get(/databases/$(database)/documents/jobs/$(existing().jobId)).data.employerUid == request.auth.uid &&
+         incoming().diff(existing()).affectedKeys().hasAny(['status', 'aiAnalysis'])) ||
+        // Candidate updates (if needed, e.g. withdraw, but here usually no updates for candidate)
+        (isOwner(existing().candidateUid) && incoming().diff(existing()).affectedKeys().hasOnly(['status']))
+      );
+      allow delete: if isSignedIn() && isOwner(existing().candidateUid);
+    }
+
+    // ===============================================================
+    // Job Alerts
+    // ===============================================================
+    match /jobAlerts/{alertId} {
+      allow read, write: if isSignedIn() && (
+        (request.method == 'create' && incoming().uid == request.auth.uid) ||
+        (request.method != 'create' && existing().uid == request.auth.uid)
+      );
+    }
+
+    // ===============================================================
+    // Saved Jobs
+    // ===============================================================
+    match /savedJobs/{savedJobId} {
+      allow read, write: if isSignedIn() && (
+        (request.method == 'create' && incoming().uid == request.auth.uid) ||
+        (request.method != 'create' && existing().uid == request.auth.uid)
+      );
+    }
+
+    // ===============================================================
+    // Notification Preferences
+    // ===============================================================
+    function isValidNotificationPreference(data) {
+      return data.keys().hasAll(['uid', 'email', 'emailAlertsEnabled']) &&
+             data.uid == request.auth.uid &&
+             data.email is string && data.email.size() <= 100 &&
+             data.emailAlertsEnabled is bool &&
+             (!('updatedAt' in data) || data.updatedAt == request.time);
+    }
+
+    match /notificationPreferences/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && isValidNotificationPreference(incoming());
+      allow update: if isOwner(uid) && isValidNotificationPreference(incoming());
+      allow delete: if isOwner(uid);
+    }
+  }
+}

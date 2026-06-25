@@ -1,0 +1,5 @@
+{
+  "name": "JobsEdge AI",
+  "description": "Next-gen AI Talent Lifecycle Hub for Job Seekers and Employers",
+  "requestFramePermissions": ["microphone"],
+}

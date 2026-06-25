@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores basic details about the user after signup.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["candidate", "employer"] },
+        "onboardingCompleted": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "fullName", "email", "role", "onboardingCompleted"]
+    },
+    "JobAlert": {
+      "title": "Job Alert",
+      "description": "User preferences for job notifications.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "keywords": { "type": "string" },
+        "location": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "keywords", "location", "active"]
+    },
+    "JobOpening": {
+      "title": "Job Opening",
+      "description": "Details of a job posted by an employer.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "industry": { "type": "string" },
+        "location": { "type": "string" },
+        "description": { "type": "string" },
+        "requirements": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["active", "closed"] },
+        "employerUid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "status", "employerUid"]
+    },
+    "JobApplication": {
+      "title": "Job Application",
+      "description": "Applicant details for a specific job.",
+      "type": "object",
+      "properties": {
+        "jobId": { "type": "string" },
+        "candidateUid": { "type": "string" },
+        "candidateName": { "type": "string" },
+        "matchScore": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "shortlisted", "rejected"] },
+        "aiAnalysis": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["jobId", "candidateUid", "candidateName", "status"]
+    },
+    "NotificationPreference": {
+      "title": "Notification Preference",
+      "description": "Stores user preference for getting email alerts.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "emailAlertsEnabled": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "emailAlertsEnabled"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "The user's profile document."
+    },
+    "/jobAlerts/{alertId}": {
+      "schema": "JobAlert",
+      "description": "Stores individual job alert preferences."
+    },
+    "/resumes/{uid}": {
+      "schema": {
+        "title": "Resume Data",
+        "description": "Stores the user's full resume content.",
+        "type": "object",
+        "properties": {}
+      },
+      "description": "Stores the user's primary resume data."
+    },
+    "/jobs/{jobId}": {
+      "schema": "JobOpening",
+      "description": "Job postings created by employers."
+    },
+    "/applications/{applicationId}": {
+      "schema": "JobApplication",
+      "description": "Job applications submitted by candidates."
+    },
+    "/notificationPreferences/{uid}": {
+      "schema": "NotificationPreference",
+      "description": "Tracks the user's notification/email preferences."
+    }
+  }
+}
